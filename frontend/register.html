@@ -1,24 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <title>Student Registration | CCS Notes</title>
+  <title>Register | CCS Notes</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="auth-body">
 
-  <div class="auth-card">
-    <h2>Create Account</h2>
+<div class="auth-card">
+  <h2>Create Account</h2>
 
-    <input id="username" placeholder="Username" />
-    <input id="password" type="password" placeholder="Password" />
-    <button onclick="register()">Register</button>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
 
-    <p class="link">
-      Already have an account?
-      <a href="login.html">Login</a>
-    </p>
-  </div>
+  <button onclick="register()">Register</button>
+
+  <p class="link">
+    Already have an account?
+    <a href="login.html">Login</a>
+  </p>
+</div>
 
 <script>
 const API_URL = "https://ccs-notes-system.onrender.com";
