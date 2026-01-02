@@ -5,145 +5,99 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Ensure data folder exists
 const dbPath = path.join(__dirname, 'data', 'ccs_notes.db');
+const db = new sqlite3.Database(dbPath);
 
-// Connect to SQLite database
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Database connection error:', err);
-  } else {
-    console.log('Connected to SQLite database');
-  }
-});
-
-// Create tables if not exists
+// Tables
 db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      username TEXT UNIQUE,
-      password TEXT
-    )
-  `);
+  db.run(`CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
+    password TEXT
+  )`);
 
-  db.run(`
-    CREATE TABLE IF NOT EXISTS notes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER,
-      content TEXT,
-      FOREIGN KEY (user_id) REFERENCES users(id)
-    )
-  `);
+  db.run(`CREATE TABLE IF NOT EXISTS folders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    name TEXT,
+    color TEXT
+  )`);
+
+  db.run(`CREATE TABLE IF NOT EXISTS notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    folder_id INTEGER,
+    content TEXT,
+    created_at TEXT
+  )`);
 });
 
-// ================= AUTH ROUTES =================
-
-// Register
+// Auth
 app.post('/api/register', async (req, res) => {
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Missing fields' });
-  }
-
-  try {
-    const hash = await bcrypt.hash(password, 10);
-    db.run(
-      'INSERT INTO users (username, password) VALUES (?, ?)',
-      [username, hash],
-      (err) => {
-        if (err) {
-          return res.status(400).json({ error: 'User already exists' });
-        }
-        res.json({ message: 'Registered successfully' });
-      }
-    );
-  } catch (err) {
-    res.status(500).json({ error: 'Registration failed' });
-  }
+  const hash = await bcrypt.hash(req.body.password, 10);
+  db.run(
+    "INSERT INTO users(username,password) VALUES (?,?)",
+    [req.body.username, hash],
+    err => err
+      ? res.status(400).json({ error: "User exists" })
+      : res.json({ message: "Registered" })
+  );
 });
 
-// Login
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body;
-
   db.get(
-    'SELECT * FROM users WHERE username = ?',
-    [username],
-    async (err, user) => {
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      res.json({ userId: user.id });
+    "SELECT * FROM users WHERE username=?",
+    [req.body.username],
+    async (_, user) => {
+      if (!user) return res.status(401).json({ error: "Invalid" });
+      const ok = await bcrypt.compare(req.body.password, user.password);
+      ok ? res.json({ userId: user.id }) : res.status(401).json({ error: "Invalid" });
     }
   );
 });
 
-// ================= NOTES ROUTES =================
+// Profile
+app.get('/api/user/:id', (req, res) => {
+  db.get("SELECT username FROM users WHERE id=?", [req.params.id],
+    (_, row) => res.json(row));
+});
 
-// Get notes
-app.get('/api/notes/:userId', (req, res) => {
-  const { userId } = req.params;
+// Folders
+app.get('/api/folders/:uid', (req, res) => {
+  db.all("SELECT * FROM folders WHERE user_id=?", [req.params.uid],
+    (_, rows) => res.json(rows));
+});
 
-  db.all(
-    'SELECT * FROM notes WHERE user_id = ?',
-    [userId],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: 'Failed to fetch notes' });
-      }
-      res.json(rows);
-    }
+app.post('/api/folders', (req, res) => {
+  db.run(
+    "INSERT INTO folders(user_id,name,color) VALUES (?,?,?)",
+    [req.body.userId, req.body.name, req.body.color],
+    () => res.json({ message: "Folder added" })
   );
 });
 
-// Add note
+// Notes
+app.get('/api/notes/:uid', (req, res) => {
+  db.all("SELECT * FROM notes WHERE user_id=?", [req.params.uid],
+    (_, rows) => res.json(rows));
+});
+
 app.post('/api/notes', (req, res) => {
-  const { userId, content } = req.body;
-
-  if (!content) {
-    return res.status(400).json({ error: 'Empty note' });
-  }
-
   db.run(
-    'INSERT INTO notes (user_id, content) VALUES (?, ?)',
-    [userId, content],
-    () => {
-      res.json({ message: 'Note added' });
-    }
+    "INSERT INTO notes(user_id,folder_id,content,created_at) VALUES (?,?,?,?)",
+    [req.body.userId, req.body.folderId, req.body.content, new Date().toISOString()],
+    () => res.json({ message: "Note added" })
   );
 });
 
-// Delete note
-app.delete('/api/notes/:id', (req, res) => {
-  const { id } = req.params;
-
-  db.run(
-    'DELETE FROM notes WHERE id = ?',
-    [id],
-    () => {
-      res.json({ message: 'Note deleted' });
-    }
-  );
+app.put('/api/notes/:id', (req, res) => {
+  db.run("UPDATE notes SET content=? WHERE id=?",
+    [req.body.content, req.params.id],
+    () => res.json({ message: "Updated" }));
 });
 
-// ================= SERVER START =================
-
-// REQUIRED FOR RENDER
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log(`CCS Notes Backend running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log("Backend running on", PORT));
