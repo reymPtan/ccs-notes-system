@@ -1,24 +1,69 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-  <title>CCS Notes | Dashboard</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <title>Dashboard | CCS Notes</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>CCS Notes Dashboard</h1>
-  <button onclick="logout()">Logout</button>
-</header>
 
-<main>
+<script>
+const userId = localStorage.getItem("userId");
+if (!userId) {
+  window.location.href = "login.html";
+}
+</script>
+
+<div class="dashboard">
+  <h2>My Notes</h2>
+
   <div class="note-box">
-    <input id="note" placeholder="Write a note">
+    <input id="noteInput" placeholder="Write a note">
     <button onclick="addNote()">Add</button>
   </div>
-  <ul id="list"></ul>
-</main>
 
-<script src="assets/js/dashboard.js"></script>
+  <ul id="notes"></ul>
+
+  <button class="logout" onclick="logout()">Logout</button>
+</div>
+
+<script>
+const API_URL = "https://ccs-notes-system.onrender.com";
+
+async function loadNotes() {
+  const res = await fetch(`${API_URL}/api/notes/${userId}`);
+  const notes = await res.json();
+
+  const list = document.getElementById("notes");
+  list.innerHTML = "";
+
+  notes.forEach(n => {
+    const li = document.createElement("li");
+    li.textContent = n.content;
+    list.appendChild(li);
+  });
+}
+
+async function addNote() {
+  const content = document.getElementById("noteInput").value;
+
+  await fetch(`${API_URL}/api/notes`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, content })
+  });
+
+  document.getElementById("noteInput").value = "";
+  loadNotes();
+}
+
+function logout() {
+  localStorage.removeItem("userId");
+  window.location.href = "login.html";
+}
+
+loadNotes();
+</script>
+
 </body>
 </html>
