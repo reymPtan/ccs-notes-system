@@ -1,5 +1,5 @@
 
-const API = 'http://localhost:3000/api';
+const API_URL = "https://ccs-notes-system.onrender.com";
 
 async function login(){
   const r = await fetch(API+'/login',{
