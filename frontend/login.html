@@ -1,18 +1,48 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CCS Notes | Login</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <title>Student Login | CCS Notes</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="auth">
-  <div class="card">
-    <h2>CCS Notes System</h2>
-    <input id="user" placeholder="Username">
-    <input id="pass" type="password" placeholder="Password">
+<body class="auth-body">
+
+  <div class="auth-card">
+    <h2>Student Login</h2>
+
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
     <button onclick="login()">Login</button>
-    <p>No account? <a href="register.html">Register</a></p>
+
+    <p class="link">
+      No account?
+      <a href="register.html">Register</a>
+    </p>
   </div>
-<script src="assets/js/auth.js"></script>
+
+<script>
+const API_URL = "https://ccs-notes-system.onrender.com";
+
+async function login() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch(`${API_URL}/api/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    localStorage.setItem("userId", data.userId);
+    window.location.href = "dashboard.html";
+  } else {
+    alert(data.error);
+  }
+}
+</script>
+
 </body>
 </html>
