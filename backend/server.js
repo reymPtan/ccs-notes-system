@@ -1,7 +1,7 @@
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
-const cors = require('cors');
+const cors = require('cors'):\;
 const path = require('path');
 
 const app = express();
