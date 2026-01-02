@@ -1,18 +1,48 @@
-
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>CCS Notes | Register</title>
-  <link rel="stylesheet" href="assets/css/style.css">
+  <meta charset="UTF-8">
+  <title>Student Registration | CCS Notes</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="auth">
-  <div class="card">
+<body class="auth-body">
+
+  <div class="auth-card">
     <h2>Create Account</h2>
-    <input id="user" placeholder="Username">
-    <input id="pass" type="password" placeholder="Password">
+
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
     <button onclick="register()">Register</button>
-    <p><a href="login.html">Back to Login</a></p>
+
+    <p class="link">
+      Already have an account?
+      <a href="login.html">Login</a>
+    </p>
   </div>
-<script src="assets/js/auth.js"></script>
+
+<script>
+const API_URL = "https://ccs-notes-system.onrender.com";
+
+async function register() {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const res = await fetch(`${API_URL}/api/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    alert("Registered successfully!");
+    window.location.href = "login.html";
+  } else {
+    alert(data.error);
+  }
+}
+</script>
+
 </body>
 </html>
